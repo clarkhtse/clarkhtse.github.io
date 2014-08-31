@@ -1,0 +1,208 @@
+
+<!doctype html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--> 	
+<html lang="en"> 
+<!--<![endif]-->
+  <head>
+    <meta charset="utf-8" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" >
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />	<!-- Force Latest IE rendering engine -->
+    <title>GPUImage Merge Videos with Chroma Key - GPUImageMovieWriter Two Audio Tracks</title>
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,600' rel='stylesheet' type='text/css'>
+    <link href="http://feeds2.feedburner.com/tu0huang" rel="alternate" title="Tuo" type="application/atom+xml" /> 
+    <link rel="shortcut icon" href="/static/images/favicon.png" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /> 
+
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <!--[if IE 7]>
+      <script src="/static/css/font-awesome-ie7.css"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container">	
+     
+
+      <article class='fourteen columns' id="article-content" style="border: 0px solid red">
+
+  <a id="avatar" class="four columns" style="width:100px;height:100px;" href="/"></a>
+
+  <header class="eleven columns" id="article-header" style="margin-top:14px;">
+    <h1>GPUImage Merge Videos with Chroma Key - GPUImageMovieWriter Two Audio Tracks</h1>
+  </header>
+
+  <div class='eleven columns gray' id="date-header" style="margin-bottom: 10px;">
+    <p>
+      Feb 16, 2014
+    </p>
+
+  </div>
+
+  <div style="clear:both"/>
+  <div class="fourteen columns" id="article-content">
+    <p>Let’s continue second topic about <code>Merging videos with GPUImage</code>: Writing both audio tracks of source videos to final output video.</p>
+
+<div class="highlight"><pre><code class="objectivec"> 
+<span class="p">...</span>
+
+<span class="n">self</span><span class="p">.</span><span class="n">gpuMovieA</span> <span class="o">=</span> <span class="p">[[</span><span class="n">GPUImageMovie</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">initWithURL</span><span class="o">:</span><span class="p">..];</span>
+<span class="n">self</span><span class="p">.</span><span class="n">gpuMovieFX</span> <span class="o">=</span> <span class="p">[[</span><span class="n">GPUImageMovie</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">initWithURL</span><span class="o">:</span><span class="p">...];</span>
+
+<span class="p">...</span>
+
+<span class="n">self</span><span class="p">.</span><span class="n">movieWriter</span><span class="p">.</span><span class="n">shouldPassthroughAudio</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+<span class="n">self</span><span class="p">.</span><span class="n">gpuMovieA</span><span class="p">.</span><span class="n">audioEncodingTarget</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">movieWriter</span><span class="p">;</span>
+<span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">gpuMovieA</span> <span class="n">enableSynchronizedEncodingUsingMovieWriter</span><span class="o">:</span><span class="n">self</span><span class="p">.</span><span class="n">movieWriter</span><span class="p">];</span>
+
+<span class="p">...</span>
+</code></pre></div>
+
+<p>So you want to write audio track of one of two source video to destination video, above code would works quite well.</p>
+
+<p>For example, in above code we want to have audio of gpuMovieA video show up in final video. Then sometimes we found
+that we need to merge two audio tracks in each source video into final output video.</p>
+
+<p>There are some issues in github about audio writing : <a href="https://github.com/BradLarson/GPUImage/issues/934">Audio writing issues with GPUImageMovieWriter</a> and <a href="https://github.com/BradLarson/GPUImage/issues/1223">Merging of video and audio</a>.</p>
+
+<p>Someone in the issue mentioned with frustration:</p>
+
+<blockquote>
+  <p>I gave up and wrote my own code. GPUImage is great but it has so many issues and the code is not very easy to read for openGL noobs like me.
+I learned more by writing it myself - all roads lead to rome, and all of GPUImage is basically based on a few examples out there on the net anyhow..</p>
+</blockquote>
+
+<p>Well, Brad Larson has just commented to that request:</p>
+
+<blockquote>
+  <p>There currently is no way to do this kind of audio mixing. Only one audio source is used at a time.</p>
+</blockquote>
+
+<h1 id="problem-breakdown">Problem Breakdown</h1>
+
+<p>Merging video tracks does work but audio doens’t is because the way how it works. For video tracks merging, there are two GPUImageMovie instances and each starts reading frames, uploading image buffer to GPU then grabbing the reference to rendered texture, passing to GPUImageMovieWriter instance. Then GPUImageMovieWriter bind references of two textures to chroma key shader’s input sample textures, rendered it. Finally grabbing the rendered output texture and write it to output video.</p>
+
+<p>However audio tracks works quite differently, as you couldn’t mix two CMSampleBufferRef of audio track output. How about in the GPUImageMovieWriter we use AVMutableComposition to mix two audio tracks and output it as a source for asset writer to write it to final output video.</p>
+
+<div class="highlight"><pre><code class="objectivec"> 
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">startMixAudio</span><span class="p">{</span>
+     <span class="k">if</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">rawVideoPath</span><span class="p">){</span>
+         <span class="c1">//start reading</span>
+         <span class="n">NSURL</span> <span class="o">*</span><span class="n">audioURL</span> <span class="o">=</span> <span class="p">[</span><span class="n">NSURL</span> <span class="n">fileURLWithPath</span><span class="o">:</span><span class="n">self</span><span class="p">.</span><span class="n">rawVideoPath</span><span class="p">];</span>
+         <span class="n">NSURL</span> <span class="o">*</span><span class="n">audioURL2</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="n">URLForResource</span><span class="o">:</span><span class="s">@&quot;BOOMi_Greet&quot;</span> <span class="n">withExtension</span><span class="o">:</span><span class="s">@&quot;mp4&quot;</span><span class="p">];</span>
+ 
+         <span class="n">AVURLAsset</span><span class="o">*</span> <span class="n">audioAsset</span> <span class="o">=</span> <span class="p">[[</span><span class="n">AVURLAsset</span> <span class="n">alloc</span><span class="p">]</span><span class="n">initWithURL</span><span class="o">:</span><span class="n">audioURL</span> <span class="n">options</span><span class="o">:</span><span class="nb">nil</span><span class="p">];</span>
+         <span class="n">AVURLAsset</span><span class="o">*</span> <span class="n">audioAsset2</span> <span class="o">=</span> <span class="p">[[</span><span class="n">AVURLAsset</span> <span class="n">alloc</span><span class="p">]</span><span class="n">initWithURL</span><span class="o">:</span><span class="n">audioURL2</span> <span class="n">options</span><span class="o">:</span><span class="nb">nil</span><span class="p">];</span>
+ 
+ 
+         <span class="n">AVMutableComposition</span><span class="o">*</span> <span class="n">mixComposition</span> <span class="o">=</span> <span class="p">[</span><span class="n">AVMutableComposition</span> <span class="n">composition</span><span class="p">];</span>
+ 
+         <span class="n">AVMutableCompositionTrack</span> <span class="o">*</span><span class="n">compositionCommentaryTrack</span> <span class="o">=</span> <span class="p">[</span><span class="n">mixComposition</span> <span class="n">addMutableTrackWithMediaType</span><span class="o">:</span><span class="n">AVMediaTypeAudio</span>
+                                                                                             <span class="nl">preferredTrackID:</span><span class="n">kCMPersistentTrackID_Invalid</span><span class="p">];</span>
+         <span class="p">[</span><span class="n">compositionCommentaryTrack</span> <span class="n">insertTimeRange</span><span class="o">:</span><span class="n">CMTimeRangeMake</span><span class="p">(</span><span class="n">kCMTimeZero</span><span class="p">,</span> <span class="n">audioAsset</span><span class="p">.</span><span class="n">duration</span><span class="p">)</span>
+                                             <span class="nl">ofTrack:</span><span class="p">[[</span><span class="n">audioAsset</span> <span class="n">tracksWithMediaType</span><span class="o">:</span><span class="n">AVMediaTypeAudio</span><span class="p">]</span> <span class="n">objectAtIndex</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>
+                                              <span class="nl">atTime:</span><span class="n">kCMTimeZero</span> <span class="n">error</span><span class="o">:</span><span class="nb">nil</span><span class="p">];</span>
+ 
+ 
+         <span class="n">AVMutableCompositionTrack</span> <span class="o">*</span><span class="n">compositionAudioTrack</span> <span class="o">=</span> <span class="p">[</span><span class="n">mixComposition</span> <span class="n">addMutableTrackWithMediaType</span><span class="o">:</span><span class="n">AVMediaTypeAudio</span>
+                                                                                        <span class="nl">preferredTrackID:</span><span class="n">kCMPersistentTrackID_Invalid</span><span class="p">];</span>
+         <span class="p">[</span><span class="n">compositionAudioTrack</span> <span class="n">insertTimeRange</span><span class="o">:</span><span class="n">CMTimeRangeMake</span><span class="p">(</span><span class="n">kCMTimeZero</span><span class="p">,</span> <span class="n">audioAsset</span><span class="p">.</span><span class="n">duration</span><span class="p">)</span>
+                                        <span class="nl">ofTrack:</span><span class="p">[[</span><span class="n">audioAsset2</span> <span class="n">tracksWithMediaType</span><span class="o">:</span><span class="n">AVMediaTypeAudio</span><span class="p">]</span> <span class="n">objectAtIndex</span><span class="o">:</span><span class="mi">0</span><span class="p">]</span>
+                                         <span class="nl">atTime:</span><span class="n">kCMTimeZero</span> <span class="n">error</span><span class="o">:</span><span class="nb">nil</span><span class="p">];</span>
+ 
+ 
+ 
+ 
+         <span class="c1">// --- video reader</span>
+ 
+         <span class="n">AVAssetReader</span> <span class="o">*</span><span class="n">assetReader</span> <span class="o">=</span> <span class="p">[</span><span class="n">AVAssetReader</span> <span class="n">assetReaderWithAsset</span><span class="o">:</span><span class="n">mixComposition</span> <span class="n">error</span><span class="o">:</span><span class="nb">nil</span><span class="p">];</span>
+ 
+ 
+         <span class="n">AVAssetReaderAudioMixOutput</span> <span class="o">*</span> <span class="n">assetReaderTrackOutput</span> <span class="o">=</span>
+                 <span class="p">[[</span><span class="n">AVAssetReaderAudioMixOutput</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">initWithAudioTracks</span><span class="o">:</span><span class="p">[</span><span class="n">mixComposition</span> <span class="n">tracksWithMediaType</span><span class="o">:</span><span class="n">AVMediaTypeAudio</span><span class="p">]</span>
+                                                            <span class="nl">audioSettings:</span><span class="nb">nil</span><span class="p">];</span>
+ 
+ 
+ <span class="c1">//        AVAssetTrack *assetTrack = [[mixComposition tracksWithMediaType:AVMediaTypeAudio] objectAtIndex:0];</span>
+ <span class="c1">//        AVAssetReaderTrackOutput *assetReaderTrackOutput = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:assetTrack outputSettings:NULL];</span>
+         <span class="p">[</span><span class="n">assetReader</span> <span class="n">addOutput</span><span class="o">:</span><span class="n">assetReaderTrackOutput</span><span class="p">];</span>
+         <span class="p">[</span><span class="n">assetReader</span> <span class="n">startReading</span><span class="p">];</span>
+ 
+ 
+         <span class="p">[</span><span class="n">assetWriterAudioInput</span> <span class="n">requestMediaDataWhenReadyOnQueue</span><span class="o">:</span><span class="n">movieWritingQueue</span> <span class="n">usingBlock</span><span class="o">:^</span>
+         <span class="p">{</span>
+             <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Asset Writer ready :%d&quot;</span><span class="p">,</span> <span class="n">assetWriterAudioInput</span><span class="p">.</span><span class="n">readyForMoreMediaData</span><span class="p">);</span>
+ 
+             <span class="k">while</span> <span class="p">(</span><span class="n">assetWriterAudioInput</span><span class="p">.</span><span class="n">readyForMoreMediaData</span> <span class="o">&amp;</span> <span class="o">!</span><span class="n">audioEncodingIsFinished</span><span class="p">)</span>
+             <span class="p">{</span>
+                 <span class="n">CMSampleBufferRef</span> <span class="n">nextBuffer</span><span class="p">;</span>
+ 
+                 <span class="k">if</span><span class="p">([</span><span class="n">assetReader</span> <span class="n">status</span><span class="p">]</span> <span class="o">==</span> <span class="n">AVAssetReaderStatusReading</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">nextBuffer</span> <span class="o">=</span> <span class="p">[</span><span class="n">assetReaderTrackOutput</span> <span class="n">copyNextSampleBuffer</span><span class="p">]))</span>
+                 <span class="p">{</span>
+                     <span class="k">if</span> <span class="p">(</span><span class="n">nextBuffer</span><span class="p">)</span>
+                     <span class="p">{</span>
+                         <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;append buffer NextBuffer&quot;</span><span class="p">);</span>
+                         <span class="p">[</span><span class="n">assetWriterAudioInput</span> <span class="n">appendSampleBuffer</span><span class="o">:</span><span class="n">nextBuffer</span><span class="p">];</span>
+                     <span class="p">}</span>
+                 <span class="p">}</span>
+ 
+                 <span class="k">else</span>
+                 <span class="p">{</span>
+                     <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;audio wrint done&quot;</span><span class="p">);</span>
+                     <span class="n">audioEncodingIsFinished</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+                     <span class="p">[</span><span class="n">assetWriterAudioInput</span> <span class="n">markAsFinished</span><span class="p">];</span>
+                 <span class="p">}</span>
+             <span class="p">}</span>
+         <span class="p">}];</span>
+     <span class="p">}</span>
+ 
+  <span class="p">}</span>
+ 
+</code></pre></div>
+
+<p>To see more details on this , you can check my commit on github: <a href="https://github.com/tuo/GPUImage/commit/94dd95a650e076dd5c5a4e1be5e01020acd44928">Writing Two Audio Tracks</a></p>
+
+  </div>
+  <hr style="visibility:hidden;"/>
+  
+  <!--<footer class="ten columns">
+    <p id='follow'>
+       Follow me on <a href="http://twitter.com/tu0huang">Twitter</a> &
+       <a href="http://weibo.com/tu0huang">Weibo</a>	   
+    </p>
+  </footer> -->
+</article>
+
+<!-- AddThis Button BEGIN -->
+<div class="addthis_toolbox addthis_default_style fourteen columns" style="margin-bottom: 11px;">
+	<a class="addthis_counter addthis_pill_style"></a>
+</div>
+<script type="text/javascript">var addthis_config = {"data_track_addressbar":true};</script>
+<script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-50f9651243f1723a"></script>
+<!-- AddThis Button END -->
+<div style="margin-bottom:10px;"/>
+<div id="disqus_thread" class="fourteen columns"></div>
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'tuo'; // required: replace example with your forum shortname  
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+    </div>
+  </body>
+</html> 
