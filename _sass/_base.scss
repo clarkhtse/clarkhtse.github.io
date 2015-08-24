@@ -1,80 +1,80 @@
-// Body resets
-//
-// Update the foundational and global aspects of the page.
-
-@import url(http://fonts.googleapis.com/earlyaccess/nanumgothic.css);
-
-* {
-  -webkit-box-sizing: border-box;
-     -moz-box-sizing: border-box;
-          box-sizing: border-box;
+/**
+ * Set `margin-bottom` to maintain vertical rhythm
+ */
+h1, h2, h3, h4, h5, h6,
+p, blockquote, pre,
+ul, ol, dl, figure,
+%vertical-rhythm {
+    margin-bottom: $spacing-unit / 2;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
+/**
+ * Figures
+ */
+figure > img {
+    display: block;
 }
 
-html {
-  font-family: "Nanum Gothic", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+figcaption {
+    font-size: $small-font-size;
+}
 
-  @media (min-width: 38em) {
+
+/**
+ * Blockquotes
+ */
+blockquote {
+    color: $grey-color;
+    border-left: 4px solid $grey-color-light;
+    padding-left: $spacing-unit / 2;
     font-size: 18px;
-  }
+    letter-spacing: -1px;
+    font-style: italic;
+
+    > :last-child {
+        margin-bottom: 0;
+    }
 }
 
-body {
-  color: #515151;
-  background-color: #fff;
-  -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
+
+
+/**
+ * Code formatting
+ */
+pre,
+code {
+    font-size: 15px;
+    border: 1px solid $grey-color-light;
+    border-radius: 3px;
+    background-color: #eef;
 }
 
-// No `:visited` state is required by default (browsers will use `a`)
-a {
-  color: #268bd2;
-  text-decoration: none;
-
-  // `:focus` is linked to `:hover` for basic accessibility
-  &:hover,
-  &:focus {
-    text-decoration: underline;
-  }
-
-  strong {
-    color: inherit;
-  }
+code {
+    padding: 1px 5px;
 }
 
-img {
-  display: block;
-  max-width: 100%;
-  margin: 0 0 1rem;
-  border-radius: 5px;
+pre {
+    padding: 8px 12px;
+    /*overflow-x: scroll;*/
+
+    > code {
+        border: 0;
+        padding-right: 0;
+        padding-left: 0;
+    }
 }
 
-table {
-  margin-bottom: 1rem;
-  width: 100%;
-  font-size: 85%;
-  border: 1px solid #e5e5e5;
-  border-collapse: collapse;
+
+/**
+ * Clearfix
+ */
+%clearfix {
+
+    &:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
 }
 
-td,
-th {
-  padding: .25rem .5rem;
-  border: 1px solid #e5e5e5;
-}
 
-th {
-  text-align: left;
-}
-
-tbody tr:nth-child(odd) td,
-tbody tr:nth-child(odd) th {
-  background-color: #f9f9f9;
-}

@@ -1,31 +1,16 @@
-# Permalinks
-#
-# Use of `relative_permalinks` ensures post links from the index work properly.
-permalink:           pretty
-relative_permalinks: true
+# Site settings
+title: Discountry
+logo: book
+email: feibilanceon@gmail.com
+description: Discountry's DEV Blog
+baseurl: "" # the subpath of your site, e.g. /blog/
+url: "http://discountry.github.io" # the base hostname & protocol for your site
+twitter_username: discountifu
+github_username:  discountry
 
-# Setup
-title:               Purecolor
-tagline:             
-description:         
-url:                 "http://clarkhtse.github.io"
-paginate:            5
-baseurl:             ""
+# Build settings
+permalink: pretty
+markdown: kramdown
 
-# Assets
-#
-# We specify the directory for Jekyll so we can use @imports.
-sass:
-  sass_dir:          _sass
-  style:            :compressed
-
-# About/contact
-author:
-  name:              Purecolor
-  url:               http://clarkhtse.github.io
-  email:             purecolor85@gmail.com
-
-# Custom vars
-version:             1.0.0
-github:
-  repo:              https://github.com/clarkhtse/clarkhtse.github.io
+#Pagination
+paginate: 6
