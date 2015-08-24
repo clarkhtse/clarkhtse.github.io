@@ -7,6 +7,8 @@ tags: ['Mac','Hackintosh']
 ---
 <!-- more -->
 
+## heading
+
 ### Resources you may need
 
 * [威锋](http://bbs.feng.com/thread-htm-fid-102.html)
