@@ -1,20 +1,37 @@
 ---
 layout: default
-title: Tuo/拓
+title: Home
 ---
 
-<ul id="posts" class="twelve columns offset-by-four">
-  {% for post in site.posts %}
-    <li>
-      <a class="nine columns" href="{{ post.url }}">{{ post.title }}</a>
-      <span class="two columns" style="font-size:0.9em">{{ post.date | date: "%b %d, %Y" }}</span>
-    </li>
+<div class="posts">
+  {% for post in paginator.posts %}
+  <div class="post">
+    <h1 class="post-title">
+      <a href="{{ site.baseurl }}{{ post.url }}">
+        {{ post.title }}
+      </a>
+    </h1>
+
+    <span class="post-date">{{ post.date | date_to_string }}</span>
+
+    {{ post.content }}
+  </div>
   {% endfor %}
+</div>
 
-</ul>
-<hr style="margin-bottom: 10px;"/>
-<div>
-	<code class="twelve columns offset-by-four" style="float: right; width: 261px; color: rgb(153, 153, 153); font-size: 0.8em; margin-right: 0px; padding-left: 0px; margin-left: 0px;">Theme powered by <a style="color: rgb(153, 153, 153);" href="http://sirupsen.com/">Simon Hørup Eskildsen</a></code>
-</div>	
-
-
+<div class="pagination">
+  {% if paginator.next_page %}
+    <a class="pagination-item older" href="{{ site.baseurl }}/page{{paginator.next_page}}">Older</a>
+  {% else %}
+    <span class="pagination-item older">Older</span>
+  {% endif %}
+  {% if paginator.previous_page %}
+    {% if paginator.page == 2 %}
+      <a class="pagination-item newer" href="{{ site.baseurl }}/">Newer</a>
+    {% else %}
+      <a class="pagination-item newer" href="{{ site.baseurl }}/page{{paginator.previous_page}}">Newer</a>
+    {% endif %}
+  {% else %}
+    <span class="pagination-item newer">Newer</span>
+  {% endif %}
+</div>
