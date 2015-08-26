@@ -83,4 +83,3 @@ When the first time you open your Hackintosh, the network or video card or sound
 
 
 
-
