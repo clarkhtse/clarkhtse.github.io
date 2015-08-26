@@ -7,7 +7,7 @@ tags: ['Mac','Hackintosh']
 ---
 <!-- more -->
 
-## heading
+## heading 1
 
 ### Resources you may need
 
